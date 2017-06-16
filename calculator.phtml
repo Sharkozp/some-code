@@ -1,0 +1,713 @@
+<?php
+$directions = array('N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW');
+$helper     = Mage::helper('km_calculator');
+$coreHelper = Mage::helper('core');
+?>
+<form id="calculation-form" action="<?php echo $this->getUrl("*/*/result") ?>" method="post">
+	<div class="std">
+		<div class="top-inputs">
+			<span class="block-with-line"><?php echo $this->__('Their annual electricity consumption') ?></span>
+
+			<div class="info-block">
+				<span class="info-icon"></span>
+				<input id="month-power" class="validate-number required-entry" placeholder="kWh">
+				<div class="info-tooltip hidden">
+					<?php echo $this->getChildHtml("calc_tooltip_1") ?>
+				</div>
+			</div>
+			<span><?php echo $this->__("kWh, or") ?></span>
+
+			<div class="info-block">
+				<span class="info-icon"></span>
+				<input id="month-value" placeholder="&euro;">
+				<div class="info-tooltip hidden">
+					<?php echo $this->getChildHtml("calc_tooltip_2") ?>
+				</div>
+			</div>
+			<span><?php echo $this->__("&euro;") ?></span>
+		</div>
+
+		<div class="region-chooser">
+			<div id="vmap" class="image-region"></div>
+			<input name="region" id="region" type="hidden">
+
+			<div class="text-region">
+				<span class="block-with-line"><?php echo $this->__('Please choose') ?></span>
+				<span class="block-with-line"><?php echo $this->__('Your Region') ?></span>
+
+				<select id="region-select">
+					<?php $regions = Mage::helper('km_calculator')->getRegions() ?>
+					<?php foreach ($regions as $region): ?>
+						<option value="<?php echo $region ?>"><?php echo $region ?></option>
+					<?php endforeach; ?>
+				</select>
+			</div>
+		</div>
+		<div class="roof-data">
+			<div class="roof-items">
+				<span class="block-with-line"><?php echo $this->__('Your roof data') ?></span>
+
+				<div class="inputs">
+					<span><?php echo $this->__("Long") ?></span>
+					<div class="info-block">
+						<input id="roof-height" class="validate-number required-entry"
+						       placeholder="<?php echo $this->__('Long') ?>">
+					</div>
+					<span><?php echo $this->__("m") ?></span>
+
+					<span><?php echo $this->__("Width") ?></span>
+					<div class="info-block">
+						<input id="roof-width" class="validate-number required-entry"
+						       placeholder="<?php echo $this->__('Width') ?>">
+					</div>
+					<span><?php echo $this->__("m") ?></span>
+				</div>
+
+                <span class="roof-area"><?php echo $this->__('Detected area:') ?><span class="square"><span
+			                id="roof-area">0</span>m<sup>2</sup></span></span>
+
+				<div class="sliders">
+					<span class="roof-pitch-title"><?php echo $this->__('Roof pitch') ?></span>
+
+					<div id="roof-pitch-slider"></div>
+					<div id="direction-slider"></div>
+					<input id="roof-pitch" name="roof-pitch" type="hidden"/>
+					<input id="direction-value" name="direction-value" type="hidden"/>
+
+					<span class="roof-pitch-title"><?php echo $this->__('Roof orientation') ?></span>
+				</div>
+			</div>
+
+			<div class="roof-image">
+				<img id="house-image" src="<?php echo $this->getSkinUrl('images/haus/haus_20.jpg'); ?>">
+				<?php $count = count($directions); ?>
+				<?php for ($i = 2; $i < $count + 2; $i ++): ?>
+					<?php $index = ($i >= $count) ? $i - $count : $i ?>
+					<div id="direction-<?php echo $i - 2 ?>"
+					     <?php if ($i - 2 == 3 || $i - 2 == 4): ?>class="hidden-block"<?php endif; ?>><?php echo $directions[ $index ] ?></div>
+				<?php endfor; ?>
+			</div>
+		</div>
+		<div id="bottom-calc">
+			<div class="bottom-calc-left">
+				<div class="inputs">
+					<div class="info-block">
+						<input id="module-count" name="module-count" class="validate-number required-entry">
+						<label for="module-count"><?php echo $this->__('Module count') ?></label>
+					</div>
+
+					<div class="info-block">
+						<input id="total-output" placeholder="kWp" disabled>
+						<label for="total-output"><?php echo $this->__('Total output') ?></label>
+					</div>
+					<span><?php echo $this->__("kWp") ?></span>
+				</div>
+			</div>
+
+			<div class="bottom-calc-right">
+				<button type="button" class="button" title="<?php echo $this->__('occupy') ?>" name="occupy"
+				        id="occupy">
+					<span><span><?php echo $this->__('occupy') ?></span></span>
+				</button>
+			</div>
+		</div>
+
+		<div id="cover-block" class="hidden-block"></div>
+		<div class="bottom-calc-right bottom-space hidden-block">
+			<button type="button" class="button " title="<?php echo $this->__('calculate') ?>" name="calculate"
+			        id="calculate">
+				<span><span><?php echo $this->__('calculate') ?></span></span>
+			</button>
+		</div>
+
+		<div id="graphs" class="hidden-block">
+			<table class="top-legends hidden-block">
+				<tr>
+					<td>
+						<div class="color1"></div>
+					</td>
+					<td><?php echo $this->__('Revenue current injection') ?></td>
+				</tr>
+				<tr>
+					<td>
+						<div class="color2"></div>
+					</td>
+					<td><?php echo $this->__('Savings through use of own current') ?></td>
+				</tr>
+				<tr>
+					<td>
+						<div class="color3"></div>
+					</td>
+					<td><?php echo $this->__('Investment') ?></td>
+				</tr>
+			</table>
+
+
+			<div id="graph1">
+				<div>
+					<input type="radio" id="without-battery" name="battery" value="0" checked>
+					<label
+						for="without-battery"><span><?php echo $this->__('Your Benefits') ?></span><?php echo $this->__(' without storage') ?>
+						<span><?php echo $this->__('after 25 years') ?></span>
+						<span class="price"></span>
+					</label>
+					<span class="info-icon"></span>
+					<div class="info-tooltip hidden">
+						<?php echo $this->getChildHtml("calc_tooltip_3") ?>
+					</div>
+				</div>
+
+				<div class="graph">
+					<span class="label1"><?php echo $this->__('Revenue') ?></span>
+					<ul class="barGraph">
+						<li class="set1 color1" style="height: 100%; left: 0; "></li>
+						<li class="set2 color2" style="height: 62%; left: 0; "></li>
+
+						<li class="set1 color3" style="height: 57%; left: 137px; "></li>
+						<li class="label2"><?php echo $this->__('Expenditure') ?></li>
+					</ul>
+				</div>
+			</div>
+
+			<div id="graph2">
+				<div>
+					<input type="radio" id="with-battery" name="battery" value="1">
+					<label
+						for="with-battery"><span><?php echo $this->__('Your Benefits') ?></span><?php echo $this->__(' with storage') ?>
+						<span><?php echo $this->__('after 25 years') ?></span>
+						<span class="price"></span>
+					</label>
+					<span class="info-icon"></span>
+					<div class="info-tooltip hidden">
+						<?php echo $this->getChildHtml("calc_tooltip_4") ?>
+					</div>
+				</div>
+
+				<div class="graph">
+					<span class="label1"><?php echo $this->__('Revenue') ?></span>
+					<ul class="barGraph">
+						<li class="set1 color1" style="height: 100%; left: 0; "></li>
+						<li class="set2 color2" style="height: 62%; left: 0; "></li>
+
+						<li class="set1 color3" style="height: 57%; left: 137px; "></li>
+						<li class="label2"><?php echo $this->__('Expenditure') ?></li>
+					</ul>
+				</div>
+			</div>
+
+			<table class="legends">
+				<tr>
+					<td>
+						<div class="color1"></div>
+					</td>
+					<td><?php echo $this->__('Revenue current injection') ?></td>
+				</tr>
+				<tr>
+					<td>
+						<div class="color2"></div>
+					</td>
+					<td><?php echo $this->__('Savings through use of own current') ?></td>
+				</tr>
+				<tr>
+					<td>
+						<div class="color3"></div>
+					</td>
+					<td><?php echo $this->__('Investment') ?></td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="bottom-button-block" class="hidden-block">
+			<span id="generate-pdf"><span class="detailed-info"></span><span
+						class="text-info"><?php echo $this->__('Detailed overview of your plant') ?></span></span>
+			<button type="submit" class="button" title="<?php echo $this->__('to the shop') ?>" id="to-shop">
+				<span><span><?php echo $this->__('to the shop') ?></span></span>
+			</button>
+		</div>
+	</div>
+</form>
+<script type="text/javascript">
+	//< ![CDATA[
+	var calculationForm = new VarienForm('calculation-form');
+
+	var loader = "<div id='form-loader' class='hidden-block'></div>";
+	var electricityPrice = <?php echo $helper->getAnnual() ?>;
+	var moduleLength = 1.6;
+	var moduleWidth = 1;
+	var monthPower = $j("#month-power");
+	var regionInput = $j('#region');
+	var roofHeight = $j("#roof-height");
+	var roofWidth = $j("#roof-width");
+	var roofPitch = $j('#roof-pitch');
+	var directionInput = $j('#direction-value');
+	var moduleCount = $j('#module-count');
+	var coverBlock = $j("#cover-block");
+
+	var roofPitchValue = 20;
+	var directionDefaultValue = 2;
+	var directions = <?php echo json_encode($directions) ?>;
+
+	roofPitch.attr('value', roofPitchValue);
+	directionInput.attr('value', directions[directionDefaultValue]);
+
+	function checkForm() {
+		if (calculationForm.validator && calculationForm.validator.validate()) {
+			if (checkInputs()) {
+				calculate();
+			}
+		} else {
+			checkInputs();
+		}
+	}
+
+	function checkFormForOccupy() {
+		if (calculationForm.validator && calculationForm.validator.validate()) {
+			if (checkInputs()) {
+				if (coverBlock.is(':hidden')) {
+					coverBlock.show();
+					setMaxModuleCount();
+				} else {
+					coverBlock.hide();
+				}
+
+				var calcButton = $j(".std > .bottom-calc-right");
+				if (calcButton.is(':hidden')) {
+					calcButton.show();
+				} else {
+					calcButton.hide();
+				}
+
+				drawBoard();
+			}
+		} else {
+			checkInputs();
+		}
+	}
+
+	function checkFields(correct, message) {
+		if (correct) {
+			message += "<?php echo $coreHelper->__("These are mandatory:")?>" + "\n";
+		}
+		return message;
+	}
+
+	function checkInputs() {
+		var correct = true, message = "";
+		if (!monthPower.val().length > 0 || !(/^\d+$/.test(monthPower.val()))) {
+			monthPower.focus();
+			message = checkFields(correct, message);
+			message += "- <?php echo $coreHelper->__("annual electricity consumption");?>" + "\n";
+			correct = false;
+		}
+
+		if (!roofHeight.val().length > 0 || !(/^\d+$/.test(roofHeight.val()))) {
+			roofHeight.focus();
+			message = checkFields(correct, message);
+			message += "- <?php echo $coreHelper->__("Long");?>" + "\n";
+			correct = false;
+		}
+
+		if (!roofWidth.val().length > 0 || !(/^\d+$/.test(roofWidth.val()))) {
+			roofWidth.focus();
+			message = checkFields(correct, message);
+			message += "- <?php echo $coreHelper->__("Width");?>" + "\n";
+			correct = false;
+		}
+
+		if (!moduleCount.val().length > 0 || !(/^\d+$/.test(moduleCount.val()))) {
+			moduleCount.focus();
+			message = checkFields(correct, message);
+			message += "<?php echo $coreHelper->__("Module count");?>" + "\n";
+			correct = false;
+		}
+
+		if (!regionInput.val().length > 0) {
+			regionInput.focus();
+			message += "- <?php echo $this->__("Please select a region");?>" + "\n";
+			correct = false;
+		}
+
+		if (moduleCount.val() > getMaxModuleCount()) {
+			moduleCount.focus();
+			message += "<?php echo $this->__("Can't place modules more than roof square");?>" + "\n";
+			correct = false;
+		}
+
+		if (!correct) {
+			alert(message);
+		}
+		return correct;
+	}
+
+	loader = $j(loader).appendTo('body');
+
+	function calculate() {
+		var url = "<?php echo $this->getUrl('*/*/calculation/');?>";
+
+		$j.ajax({
+			url: url,
+			type: 'post',
+			data: {
+				monthPower: monthPower.val(),
+				region: regionInput.val(),
+				roofArea: $j("#roof-area").text(),
+				roof: roofPitch.val(),
+				direction: directionInput.val(),
+				moduleCount: moduleCount.val()
+			},
+			beforeSend: function () {
+				changeLoader();
+			}
+		}).done(function (data) {
+			changeLoader();
+			$j("#bottom-button-block").show();
+			$j("#graphs").show();
+			$j(".std > .bottom-calc-right").removeClass("bottom-space");
+
+			$j("#graph1 .color1").html(data.proceeds);
+			$j("#graph1 .color2").html(data.income).height(data.incomeHeight + "%");
+			$j("#graph1 .color3").html(data.investmentCost).height(data.investmentHeight + "%");
+			$j("#graph1 .label2").css("bottom", (data.investmentHeight + 12) + "%");
+			$j("#graph1 .price").text(data.resultText);
+
+			$j("#graph2 .color1").html(data.proceedsBattery);
+			$j("#graph2 .color2").html(data.incomeBattery).height(data.incomeBatteryHeight + "%");
+			$j("#graph2 .color3").html(data.investmentAndStorageCost).height(data.investmentBatteryHeight + "%");
+			$j("#graph2 .label2").css("bottom", (data.investmentBatteryHeight + 12) + "%");
+			$j("#graph2 .price").text(data.resultBatteryText);
+		});
+	}
+
+	function changeLoader() {
+		loader.toggle();
+	}
+
+	$j(".info-icon").hover(
+		function () {
+			$j(this).parent().find("div.info-tooltip").toggle();
+		},
+		function () {
+			$j(this).parent().find("div.info-tooltip").toggle();
+		}
+	);
+
+	$j(document).on('change', '#month-value', function (e) {
+		var kWp = $j(this).val() / electricityPrice;
+		monthPower.val(Math.round(kWp * 100 / 100));
+		var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+		if (!calculate) {
+			checkForm();
+		}
+	});
+
+	$j(document).on('click', "#generate-pdf", function () {
+		var url = "<?php echo $this->getUrl('*/*/generatePdf/');?>";
+		var params = 'monthPower='+monthPower.val()+'&region='+regionInput.val()+'&roofHeight='+roofHeight.val()+'&roofWidth='+roofWidth.val()+'&roofArea='+$j("#roof-area").text()+'&roof='+roofPitch.val()+'&direction='+directionInput.val()+'&moduleCount='+moduleCount.val()+'&modulesPower='+$j("#total-output").val()+'&battery='+$j("#graphs input[name='battery']:checked").val()+'&proceeds='+$j("#graph1 .color1").html()+'&income='+$j("#graph1 .color2").html()+'&investmentCost='+$j("#graph1 .color3").html()+'&result='+$j("#graph1 .price").text()+'&proceedsBattery='+$j("#graph2 .color1").html()+'&incomeBattery='+$j("#graph2 .color2").html()+'&investmentAndStorageCost='+$j("#graph2 .color3").html()+'&resultBattery='+$j("#graph2 .price").text();
+
+		var xhr = new XMLHttpRequest();
+		xhr.open('POST', url, true);
+		xhr.responseType = 'arraybuffer';
+		xhr.onload = function () {
+			if (this.status === 200) {
+				var filename = "";
+				var disposition = xhr.getResponseHeader('Content-Disposition');
+				if (disposition && disposition.indexOf('attachment') !== -1) {
+					var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+					var matches = filenameRegex.exec(disposition);
+					if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+				}
+				var type = xhr.getResponseHeader('Content-Type');
+
+				var blob = new Blob([this.response], {type: type});
+				if (typeof window.navigator.msSaveBlob !== 'undefined') {
+					// IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+					window.navigator.msSaveBlob(blob, filename);
+				} else {
+					var URL = window.URL || window.webkitURL;
+					var downloadUrl = URL.createObjectURL(blob);
+
+					if (filename) {
+						// use HTML5 a[download] attribute to specify filename
+						var a = document.createElement("a");
+						// safari doesn't support this yet
+						if (typeof a.download === 'undefined') {
+							window.location = downloadUrl;
+						} else {
+							a.href = downloadUrl;
+							a.download = filename;
+							document.body.appendChild(a);
+							a.click();
+						}
+					} else {
+						window.location = downloadUrl;
+					}
+
+					setTimeout(function () {
+						URL.revokeObjectURL(downloadUrl);
+					}, 100); // cleanup
+				}
+			}
+		};
+		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+		xhr.send(params);
+	});
+
+	$j(function () {
+		$j("#roof-pitch-slider").slider({
+			range: "min",
+			value: roofPitchValue,
+			min: 0,
+			max: 50,
+			step: 10,
+			slide: function (event, ui) {
+				var pic_real_width, pic_real_height;
+				$j("#house-image").attr("src", "<?php echo $this->getSkinUrl() ?>images/haus/haus_" + ui.value + ".jpg").load(function () {
+					pic_real_width = this.width;   // Note: $(this).width() will not
+					pic_real_height = this.height; // work for in memory images.
+				});
+			},
+			//this updates the value of your hidden field when user stops dragging
+			change: function (event, ui) {
+				roofPitch.attr('value', ui.value);
+				var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+				if (!calculate) {
+					checkForm();
+				}
+			}
+		}).each(function () {
+			// Get the options for this slider
+			var opt = $j(this).data().uiSlider.options;
+
+			// Get the number of possible values
+			var vals = opt.max - opt.min;
+
+			// Space out values
+			for (var i = 0; i <= vals; i += opt.step) {
+				var el = $j('<label>' + (i) + '<sup>&ordm;</sup></label>').css('left', (i / vals * 100) + '%');
+				$j("#roof-pitch-slider").append(el);
+			}
+		});
+
+		$j("#direction-slider").slider({
+			value: directionDefaultValue,
+			min: 0,
+			max: 7,
+			step: 1,
+			slide: function (event, ui) {
+				for (var i = 0; i < directions.length; i++) {
+					var dir = '#direction-' + i;
+					var index = ui.value + i;
+					if (index >= directions.length) {
+						index -= directions.length;
+					}
+					$j(dir).text(directions[index]);
+				}
+			},
+			//this updates the value of your hidden field when user stops dragging
+			change: function (event, ui) {
+				directionInput.attr('value', directions[ui.value]);
+				var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+				if (!calculate) {
+					checkForm();
+				}
+			}
+		}).each(function () {
+			// Get the options for this slider
+			var opt = $j(this).data().uiSlider.options;
+
+			// Get the number of possible values
+			var vals = opt.max - opt.min;
+
+			// Space out values
+			for (var i = 0; i <= vals; i += opt.step) {
+				var el = $j('<label>' + directions[i] + '</label>').css('left', (i / vals * 100) + '%');
+				$j("#direction-slider").append(el);
+			}
+		});
+	});
+
+	$j('#vmap').vectorMap({
+		map: 'germany_en',
+		color: "#ffe868",
+		borderColor: "#925e24",
+		enableZoom: false,
+		borderWidth: "2px",
+		borderOpacity: 1,
+		backgroundColor: '#ffffff',
+		onRegionClick: function (element, code, region) {
+			regionInput.attr('value', region);
+			var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+			if (!calculate) {
+				checkForm();
+			}
+		}
+	});
+
+	$j(document).on('change', '#roof-height, #roof-width', function (e) {
+		setMaxModuleCount();
+		if (!coverBlock.is(':hidden')) {
+			drawBoard();
+		}
+	});
+
+	$j(document).on("click", "#calculate", function () {
+		checkForm();
+	});
+
+	$j(document).on("click", "#occupy", function () {
+		checkFormForOccupy()
+	});
+
+	function setMaxModuleCount() {
+		var moduleCountValue = getMaxModuleCount();
+		moduleCount.val(moduleCountValue);
+		setModulesPower(moduleCountValue);
+	}
+
+	$j(document).on('change', '#roof-height, #roof-width, #module-count, #month-power', function (e) {
+		if (this.id === 'month-power') {
+			$j('#month-value').val("");
+		}
+
+		if (this.id === 'module-count') {
+			setModulesPower($j(this).val());
+		}
+
+		var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+		if (!calculate) {
+			checkForm();
+		}
+	});
+
+	if ($j(document).width() < 835) {
+		$j(regionInput).val($j("#region-select").val());
+	}
+
+	$j(document).on('change', '#region-select', function () {
+		$j(regionInput).val($j(this).val());
+	});
+
+	function getMaxModuleCount() {
+		var height = roofWidth.val();
+		var width = roofHeight.val();
+		$j('#roof-area').text(height * width);
+		return parseInt(height / moduleLength) * parseInt(width / moduleWidth);
+	}
+
+	function setModulesPower(modules) {
+		var modulePower = <?php echo $helper->getModulePower() ?>;
+		var totalOutput = modules * modulePower / 1000;
+		$j('#total-output').val(totalOutput);
+	}
+
+	//canvas roof
+	function drawBoard() {
+		//padding around grid
+		var p = 0;
+
+		var cw, ch;
+		var height = parseInt(roofWidth.val());
+		var width = parseInt(roofHeight.val());
+
+		var canvasWidth = 280;
+		if (($j(document).width() >= 500)) {
+			canvasWidth = 401;
+
+		} else if (($j(document).width() >= 360)) {
+			canvasWidth = 321;
+		}
+		
+		if (width > height) {
+			cw = canvasWidth;
+			ch = cw * height / width;
+		} else {
+			ch = canvasWidth;
+			cw = ch * width / height;
+		}
+
+		// block size
+		var sizeWidth = (cw - 1) / parseInt(width / moduleWidth);
+		var sizeHeight = (ch - 1) / parseInt(height / moduleLength);
+
+		// get some info about the canvas
+		$j('#cover-block').empty();
+		var canvas = $j('<canvas/>').attr({width: cw, height: ch}).appendTo('#cover-block');
+		var context = canvas.get(0).getContext("2d");
+
+		// how many cells fit on the canvas
+		var w = ~~(cw / sizeWidth);
+		var h = ~~(ch / sizeHeight);
+
+		// create empty state array
+		var state = new Array(h);
+		for (var j = 0; j < h; ++j) {
+			state[j] = new Array(w);
+		}
+
+		// click event, using jQuery for cross-browser convenience
+		$j(canvas).click(function (e) {
+
+			// get mouse click position
+			var mx = e.offsetX;
+			var my = e.offsetY;
+
+			// calculate grid square numbers
+			var gx = ~~(mx / sizeWidth);
+			var gy = ~~(my / sizeHeight);
+
+			// make sure we're in bounds
+			if (gx < 0 || gx >= w || gy < 0 || gy >= h) {
+				return;
+			}
+
+			if (state[gy][gx]) {
+				state[gy][gx] = false;
+				fill(gx, gy, state[gy][gx]);
+				moduleCount.val(parseInt(moduleCount.val()) - 1);
+			} else {
+				state[gy][gx] = true;
+				moduleCount.val(parseInt(moduleCount.val()) + 1);
+				fill(gx, gy, state[gy][gx]);
+			}
+			setModulesPower(moduleCount.val());
+			var calculate = $j(".std > .bottom-calc-right").hasClass("bottom-space");
+			if (!calculate) {
+				checkForm();
+			}
+		});
+
+		//horizontal
+		for (var x = 0; x <= cw; x += sizeWidth) {
+			context.moveTo(0.5 + x + p, p);
+			context.lineTo(0.5 + x + p, ch + p);
+		}
+
+		//vertical
+		for (var y = 0; y <= ch; y += sizeHeight) {
+			context.moveTo(p, 0.5 + y + p);
+			context.lineTo(cw + p, 0.5 + y + p);
+		}
+
+		context.strokeStyle = "black";
+		context.stroke();
+
+		for (var k = 0; k < h; ++k) {
+			for (var z = 0; z < w; ++z) {
+				state[k][z] = true;
+				fill(z, k, state[k][z]);
+			}
+		}
+
+		// quick fill function
+		function fill(gx, gy, click) {
+			context.fillStyle = (click) ? "#1b3960" : "white";
+			context.fillRect(gx * sizeWidth, gy * sizeHeight, sizeWidth, sizeHeight);
+
+			context.strokeStyle = (click) ? "white" : "#1b3960";
+			context.lineWidth = 1;
+			context.strokeRect(gx * sizeWidth, gy * sizeHeight, sizeWidth, sizeHeight);
+		}
+	}
+
+	//]]>
+</script>
